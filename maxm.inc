@@ -1,0 +1,10 @@
+	extern	maxm_init
+	extern	maxm_all_off
+	extern	maxm_full_white
+	extern	maxm_full_blue
+	extern	maxm_full_green
+	extern	maxm_mood_light
+	extern	maxm_pulse_red
+	extern	maxm_fade_blue
+	extern	maxm_fade_white
+	extern	maxm_fade_to_rgb

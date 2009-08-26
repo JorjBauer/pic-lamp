@@ -1,0 +1,57 @@
+Architecture notes
+
+This is a big project. It involves a two-part code base (bootloader
+and main code), spans all four pages of code memory, and uses three of
+four pages of file register memory. In a perfect world, this should be
+refactored quite significantly.
+
+Program memory layout
+
+The bootloader resides at 0x1E04. The main program entry point is at
+0x100. These two addresses must not change for any future version of
+the code (without significant reprogramming; see 'Flash updates').
+
+Memory from 0x1b00 through 0x1fff is reserved for the
+bootloader. Anything below that is fair game for the main program.
+
+Bootloader
+
+There is a 90% code overlap between the main code and the bootloader
+code. But for space reasons, it wasn't feasible to include the main
+code versions in the bootloader (which has to have standalone code
+that doesn't rely on any of the main lamp functions). The bootloader
+can be made and analyzed independently of the main app (cd bootloader
+&& make && make disassemble).
+
+Hybrid build
+
+The main program is built independently of the bootloader. 'make
+bootfile.hex' (or firmware.bin, or disassemblebl, or install) will
+build a hybrid hex file that incorporates the main program as well as
+the bootloader.
+
+SD card architecture
+
+The SD card is divided into 512-byte blocks. Block 0 (the first block)
+is used as an event directory block. Block 1 (the second block,
+starting at byte 512) is a media directory block. Block 2 is the start
+of a flash upgrade block. The script card-image-creator/create-flash
+will build a card image. Inspect that script for the nitty gritty.
+
+If the first byte of block 2 is not 0x00, it indicates that a
+particular build of the main code (not the bootloader, mind you) is on
+the flash and can be used to effect an upgrade. The next four bytes
+are the length of the upgrade, and all bytes following that one are
+the actual code (starting at memory location 0x04). 'make
+firmware.bin' will generate an appropriate firmware image to be
+embedded in an SD card build.
+
+Flash updates
+
+Memory locations 0x00-0x03 and 0x1b00-0x1fff may not be
+flash-upgraded. The bootloader specifically prohibits these from being
+altered, so that the bootloader is protected.
+
+If you need to upgrade the bootloader, you'll have to write code in
+the main program that effects the upgrade. This, obviously, will be a
+bit tricky; a failure here will leave the device unbootable.

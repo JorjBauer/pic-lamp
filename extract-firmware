@@ -1,0 +1,31 @@
+#!/usr/bin/perl
+
+# Reads an intel hex file (../main.hex), extracts the code from memory
+# address 0x04 through 0x1b00, and dumps it to a binary file.
+
+while ($line = <STDIN>) {
+    chomp;
+    $line =~ /^:(..)(....)(..)(.*)$/;
+    $num = hex($1);
+    $addr = hex($2);
+    $type = hex($3);
+    $data = $4;
+
+    if ($type == 0) {
+#	print stderr "Block @ $addr ($2)\n";
+	for $i (0..$num-1) {
+	    $byte = substr($data, $i*2, 2);
+#	    print stderr "$i=$byte ";
+	    $byte = hex $byte;
+	    $memory[$addr + $i] = $byte;
+	}
+    }
+}
+
+# All data is two words, hence the '*2' here. Note also that the data
+# is little-byte-endian:
+# $memory[1] * 256 + $memory[0], $memory[3] * 256 + $memory[2], ...
+
+for $i (4*2..0x1b00*2-1) {
+    print chr($memory[$i]);
+}

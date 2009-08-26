@@ -1,0 +1,41 @@
+#!/usr/bin/perl
+
+# Create a conglomerate bootfile.hex out of main.hex and bootloader/bootloader.hex
+
+use strict;
+use warnings;
+
+my $out;
+open($out, ">bootfile.hex") || die;
+my $main;
+open($main, "main.hex") || die;
+my $bl;
+open($bl, "bootloader/bootloader.hex") || die;
+
+while (<$main>) {
+    if (/^:..3[6-9A-F]/) {
+	# Found the bootloader memory area. Stop processing main for now.
+	last;
+    } else {
+	print $out $_;
+    }
+}
+
+# Embed the bootloader code
+while (<$bl>) {
+    next
+	unless (/^:..3[6-9A-F]/);
+    print $out $_;
+}
+
+# Put in the processor flags from the end of main.hex
+while (<$main>) {
+    if (/^:..3[6-9A-F]/) {
+	# Skip the rest of the bootloader area
+    } else {
+	print $out $_;
+    }
+}
+
+close $out;
+
