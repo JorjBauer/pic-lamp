@@ -10,6 +10,9 @@ clean:
 	(cd main && make clean) ; (cd bootloader && make clean) ; (cd card-image-creator && make clean)
 	rm -f *~
 
+distclean: clean
+	(cd card-image-creator && make distclean)
+
 disassemble:
 	cd main && make disassemble
 

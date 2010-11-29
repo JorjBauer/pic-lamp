@@ -10,7 +10,7 @@ open($out, ">bootfile.hex") || die;
 my $main;
 open($main, "main.hex") || die;
 my $bl;
-open($bl, "bootloader/bootloader.hex") || die;
+open($bl, "../bootloader/bootloader.hex") || die;
 
 while (<$main>) {
     if (/^:..3[6-9A-F]/) {

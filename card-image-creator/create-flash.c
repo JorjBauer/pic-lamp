@@ -16,8 +16,8 @@ typedef struct _event_entry {
 
 char *sox_cmd = "sox -v %.2f %s -r 10000 -c 1 -e unsigned-integer -b 16 -t raw %s 2>&1|grep clip >/dev/null";
 
-char *media_prefix = "media/";
-char *cache_prefix = "cache/";
+char *media_prefix = "media";
+char *cache_prefix = "cache";
 
 event_entry events[] = {
 			/* repeating events, like so:
@@ -43,7 +43,7 @@ event_entry events[] = {
 						
 char *alarm_song = "alarm.wav";
 float alarm_volume = 0.8;
-char *firmware_image = "../firmware.bin";
+char *firmware_image = "../main/firmware.bin";
 unsigned char firmware_version;
 
 char *media[] = { "0.wav", 
@@ -115,18 +115,12 @@ char *media[] = { "0.wav",
 		  "alarmstartsearly.wav",
 		  "alarmstartsontime.wav",
 		  "andtodayis.wav",
-		  "birthday.wav",
 		  "blue.wav",
 		  "deadair.wav",
 		  "disabled.wav",
-		  "jakes.wav",
-		  "jorjs.wav",
 		  "oclock.wav",
-		  "pauls.wav",
-		  "sarahs.wav",
 		  "set.wav",
 		  "setyear.wav",
-		  "sues.wav",
 		  "white.wav",
 		  /* Any media that is listed in the event list above must 
 		   * also be listed here */
@@ -466,6 +460,8 @@ int main(int argc, char *argv[])
 	write_directory();
 	
 	fclose(output_file);
+
+	printf("... done. Generated firmware is named \"flash.img\".\n");
 	
 	return 0;
 }

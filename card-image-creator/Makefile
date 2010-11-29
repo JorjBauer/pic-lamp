@@ -1,6 +1,8 @@
 all: card
 
 card: create-flash version
+	if [ ! -d "cache" ]; then mkdir cache; fi
+	(cd ../main && make firmware.bin)
 	./create-flash
 
 version:
@@ -13,3 +15,4 @@ clean:
 
 distclean: clean
 	rm -f version-count
+	rm -rf cache
