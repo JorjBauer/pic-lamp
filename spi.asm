@@ -19,7 +19,7 @@ init_spi:
 ;;;  set up built-in SPI interface
 	banksel SSPSTAT
 	bcf     SSPSTAT, SMP ; SPI input sample phase = 0 (sample @ middle)
-	bcf     SSPSTAT, CKE ; SPI clock edge select = 0 (data xmit @ falling edge)
+	bcf     SSPSTAT, CKE ; SPI clock edge select = 0 (data xmit @ falling edge - which is the leading edge, actually, since clock polarity is 1)
 	banksel SSPCON
 	bsf     SSPCON, CKP ; clock polarity = 1 (high value is passive)
 	bcf     SSPCON, SSPM3 ; start off with the SPI bus in slow mode,
