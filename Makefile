@@ -1,8 +1,11 @@
 SCRIPT = /usr/local/share/gputils/lkr/16f877a.lkr
 OBJECTS = spi.o sd_spi.o memory.o mood_lights.o ds1307-i2c.o blink_led.o music.o piceeprom.o events.o button.o bcd_math.o bootloader.o maxm.o
 
-CFLAGS = -DDISABLE_SERIAL
-OBJECTS += dummy-serial.o
+#CFLAGS = -DDISABLE_SERIAL
+#OBJECTS += dummy-serial.o
+OBJECTS += serial.o
+#SERIAL = /dev/tty.KeySerial1
+SERIAL = `ls /dev/tty.PL2303-*|head -1`
 
 all:main.hex
 
@@ -19,8 +22,8 @@ test.hex: testmain.o
 	gplink --map -c -s $(SCRIPT) -o test.hex testmain.o
 
 test: test.hex
-	picp /dev/tty.KeySerial1 16f877a -ef
-	picp /dev/tty.KeySerial1 16f877a -wc `./perl-flags-generator test.hex` -s -wp test.hex 
+	picp $(SERIAL) 16f877a -ef
+	picp $(SERIAL) 16f877a -wc `./perl-flags-generator test.hex` -s -wp test.hex 
 
 memory.hint:
 	./build-hints.pl > memory.hint
@@ -38,7 +41,7 @@ bootfile.hex: main.hex
 	cd bootloader && make clean && make && cd .. && ./create-bootfile
 
 install: main.hex bootfile.hex
-	picp /dev/tty.KeySerial1 16f877a -ef && picp /dev/tty.KeySerial1 16f877a -wc `./perl-flags-generator main.hex` -s -wp bootfile.hex 
+	picp $(SERIAL) 16f877a -ef && picp $(SERIAL) 16f877a -wc `./perl-flags-generator main.hex` -s -wp bootfile.hex 
 
 installmain: main.hex
-	picp /dev/tty.KeySerial1 16f877a -ef && picp /dev/tty.KeySerial1 16f877a -wc `./perl-flags-generator main.hex` -s -wp main.hex
+	picp $(SERIAL) 16f877a -ef && picp $(SERIAL) 16f877a -wc `./perl-flags-generator main.hex` -s -wp main.hex
