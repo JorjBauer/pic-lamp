@@ -145,7 +145,8 @@ done_t0:
 	org	0x100
 ;;; normal_startup
 ;;;
-;;;   entry point from the bootloader.
+;;;   entry point from the bootloader. MUST be 0x100 (matching
+;;; 	bootloader/bootloader.asm's definition).
 	
 normal_startup:
         banksel ADCON0
@@ -184,12 +185,14 @@ normal_startup:
 	lcall	maxm_init
 
 ;;; set up bit-banging spi interface (for D/A chip) and built-in (for SD card)
-	lcall	init_spi
+;;; ... the SPI initialization done by the bootloader is sufficient.
+;;; 	lcall	init_spi
 
 	banksel	PORTA
 	bcf	RED_LED		; status update...
-	
-	fcall	init_serial
+
+;;; The serial initialization done by the bootloader is sufficient.
+;;; 	fcall	init_serial
 
 	;; Display the firmware version on the serial port. We'll dig the
 	;; actual reported version # out of program memory, where it's being
