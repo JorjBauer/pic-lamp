@@ -12,6 +12,11 @@
 	GLOBAL	buffer_more_music
 	GLOBAL	play_another_sample
 	GLOBAL	init_media_queue
+
+.string code
+msg_play:	
+	da      "Playing\r\n"
+	dw      0x0000
 	
 music	CODE
 
@@ -244,8 +249,7 @@ play_another_sample:
 	;; With this debugging statement here, the lamp appears to function
 	;; normally. Without it, the lamp hangs after playing long recordings.
 	;; Don't know why, but not debugging it before sarah leaves!
-	movlw	'S'		;debug
-	fcall	putch_usart	;debug
+        PUTCH_CSTR_INLINE putch_cstr_worker, msg_play
 	
 	;; If we were in an alarming mode, start playing the alarm over again.
 	;; The user has to push the button to get out of alarm mode. Note that
