@@ -68,7 +68,6 @@ MMC_START_READ_INLINE	MACRO
 
 flush_not_reqd:	
 	banksel	0
-;;; 	bcf	SD_CS		; CS is active-low. Enable CS. Leave it on.
 
 	clrf	mmc_bytecount
 	clrf	mmc_bytecount_h
@@ -126,9 +125,18 @@ continue_m:
 done:	
 	ENDM
 
+SEND_BREAK_INLINE       MACRO
+	;;   break between commands...
+	bsf     SD_CS
+	movlw   0xFF
+	PERFORM_SPI
+	bcf     SD_CS
+	ENDM
+	
 ;;; send an SPI command to a device. This only understands R1 commands,
 ;;; which expect 1 byte replies.
 SPI_COMMAND_INLINE MACRO
+	SEND_BREAK_INLINE
 	LOCAL	rr
 	movfw	spi_befF	; 0x40 | command
 	PERFORM_SPI

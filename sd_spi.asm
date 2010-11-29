@@ -26,10 +26,13 @@ sd_spi	code
 check_start_sd_spi:	
 	
 	;; this code does not need to live in any particular page.
-	
+
 ;;; send an SPI command to a device. This only understands R1 commands,
 ;;; which expect 1 byte replies.
 spi_command:
+	SEND_BREAK_INLINE
+
+spi_command_without_break:	
 	movfw	spi_befF	; 0x40 | command
 	PERFORM_SPI
 	movfw	spi_addr3	; high bits
@@ -108,7 +111,7 @@ mmc_init_v2_loop:
 	fcall	spi_command
 	xorlw	0x01		; still idle? Should be.
 	skpz
-	goto	mmc_init_v2_loop ;retry.
+	goto	mmc_init_v2 ;retry.
 	
 	;; followed by ACMD41
 	movlw	0x40 | 0x29	; ACMD41 (0x29)
