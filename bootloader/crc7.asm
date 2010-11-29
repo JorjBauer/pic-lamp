@@ -44,6 +44,7 @@ no_permutation:
 	skpc			; and if i==0, we're done with this byte
 	goto	crc7_loop
 
+	movfw	crc_data	; return the byte that was passed in.
 	return
 
 crc7_finish:
