@@ -5,7 +5,7 @@ OBJECTS = spi.o sd_spi.o memory.o mood_lights.o ds1307-i2c.o blink_led.o music.o
 #OBJECTS += dummy-serial.o
 OBJECTS += serial.o
 #SERIAL = /dev/tty.KeySerial1
-SERIAL = `ls /dev/tty.PL2303-*|head -1`
+SERIAL = `ls /dev/tty.PL2303-* 2>/dev/null|head -1`
 
 all:main.hex
 
@@ -22,8 +22,7 @@ test.hex: testmain.o
 	gplink --map -c -s $(SCRIPT) -o test.hex testmain.o
 
 test: test.hex
-	picp $(SERIAL) 16f877a -ef
-	picp $(SERIAL) 16f877a -wc `../util/perl-flags-generator test.hex` -s -wp test.hex 
+	if [ -e "$(SERIAL)" ]; then picp $(SERIAL) 16f877a -ef && picp $(SERIAL) 16f877a -wc `../util/perl-flags-generator test.hex` -s -wp test.hex ; else echo "Serial port not found" ; fi
 
 memory.hint:
 	../util/build-hints.pl > memory.hint
@@ -41,7 +40,7 @@ bootfile.hex: main.hex
 	cd ../bootloader && make clean && make && cd ../main && ../util/create-bootfile
 
 install: main.hex bootfile.hex
-	picp $(SERIAL) 16f877a -ef && picp $(SERIAL) 16f877a -wc `../util/perl-flags-generator main.hex` -s -wp bootfile.hex 
+	if [ -e "$(SERIAL)" ]; then picp $(SERIAL) 16f877a -ef && picp $(SERIAL) 16f877a -wc `../util/perl-flags-generator main.hex` -s -wp bootfile.hex ; else echo "Serial port not found" ; fi
 
 installmain: main.hex
-	picp $(SERIAL) 16f877a -ef && picp $(SERIAL) 16f877a -wc `../util/perl-flags-generator main.hex` -s -wp main.hex
+	if [ -e "($SERIAL)" ]; then picp $(SERIAL) 16f877a -ef && picp $(SERIAL) 16f877a -wc `../util/perl-flags-generator main.hex` -s -wp main.hex ; else echo "Serial port not found" ; fi
