@@ -141,17 +141,18 @@
 #define IDX_ALARMSTARTSEARLY 66
 #define IDX_ALARMSTARTSONTIME 67
 #define IDX_ANDTODAYIS 68
-#define IDX_BIRTHDAY 69
-#define IDX_BLUE 70
-#define IDX_DEADAIR 71
-#define IDX_DISABLED 72
-#define IDX_JAKES 73
-#define IDX_JORJS 74
-#define IDX_OCLOCK 75
-#define IDX_PAULS 76
-#define IDX_SARAHS 77
-#define IDX_SET 78
-#define IDX_SETYEAR 79
-#define IDX_SUES 80
-#define IDX_WHITE 81
+#define IDX_BLUE 69
+#define IDX_DEADAIR 70
+#define IDX_DISABLED 71
+#define IDX_OCLOCK 72
+#define IDX_SET 73
+#define IDX_SETYEAR 74
+#define IDX_WHITE 75
+
+;#define IDX_BIRTHDAY 76
+;#define IDX_JAKES 77
+;#define IDX_JORJS 78
+;#define IDX_PAULS 79
+;#define IDX_SARAHS 80
+;#define IDX_SUES 81
 

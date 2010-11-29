@@ -46,6 +46,9 @@ float alarm_volume = 0.8;
 char *firmware_image = "../main/firmware.bin";
 unsigned char firmware_version;
 
+/* The basic media, all of which are included in the media/ directory, 
+ * must match their corresponding  IDX_ numbers (in main/constants.inc).
+ */
 char *media[] = { "0.wav", 
 		  "1.wav",
 		  "2.wav",
