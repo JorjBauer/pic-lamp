@@ -48,6 +48,20 @@ initfailmsg:
 startfailmsg:
 	da	"SD start failed: 0x"
 	dw	0x0000
+initmsg:
+	da	"Initializing SD card\r\n"
+	dw	0x0000
+bl_mmc_ok:
+	da	"\r\nMMC initialized: ok\r\n"
+	dw	0x0000
+
+bl_start_read_ok:
+	da	"[read version:]"
+	dw	0x0000
+
+bl_done:
+	da	"\r\nBooted.\r\n"
+	dw	0x0000
 	
 	ORG	0x1e00
 	;; Code version storage: 0x1e00 is the version of code we're running
@@ -56,8 +70,8 @@ startfailmsg:
 	dw	0x00
 	;; 0x1e02 is the bootloader major version (v0.)
 	dw	0x00
-	;; 0x1e03 is the bootloader minor version (19)
-	dw	0x13
+	;; 0x1e03 is the bootloader minor version
+	dw	0x17
 
 	;; The bootloader itself starts at 0x1e04.
 	ORG	0x1e04
@@ -125,11 +139,15 @@ bootloader:
 	fcall	putch_usart
 	
 ;;; set up SD card
+	PUTCH_CSTR_INLINE putch_bootloader_worker, initmsg
+	
 	fcall	mmc_init
 	;; did it succeed?
 	xorlw	0x00		; success == 0x00.
 	skpz
 	goto	mmc_init_failed
+
+	PUTCH_CSTR_INLINE putch_bootloader_worker, bl_mmc_ok
 
 #if 0
 ;;; move the SPI bus to super-fast speed (osc/4 instead of osc/64)
@@ -168,6 +186,8 @@ bootloader_delay:
 	xorlw   0x00    ; successful start-of-read?
 	skpz
 	goto	mmc_start_failed	; if we can't init, then bail
+
+	PUTCH_CSTR_INLINE putch_bootloader_worker, bl_start_read_ok
 
 	;; check the version of code we're running, and the version on the
 	;; SD card. If they're the same, do nothing. If they're not, then
@@ -391,10 +411,10 @@ finish_updating_bootloader:
 	lcall	fpm_write
 
 finish_bootloader:
-	PUTCH_CSTR_INLINE putch_bootloader_worker, nl
-	
  	lcall	finish_reading
 
+ 	PUTCH_CSTR_INLINE putch_bootloader_worker, bl_done
+	
 	lgoto	normal_startup
 	pagesel	mmc_init_failed	; for debugging/disassembly purposes...
 
