@@ -5,6 +5,7 @@
 	include "min_serial.inc"
 #define HAVE_MMC_EXTERNS
 	include	"min_sd_spi.inc"
+	include "crc7.inc"
 	
 	GLOBAL	mmc_init
 	GLOBAL	mmc_start_read
@@ -28,20 +29,51 @@ sd_spi	code
 	;; this code does not need to live in any particular page.
 	
 ;;; send an SPI command to a device. This only understands R1 commands,
-;;; which expect 1 byte replies.
+;;; which expect 1 byte replies. It also correctly calculates CRCs.
 spi_command:
+	call	send_break
+	
+	lcall	crc7_init	
 	movfw	spi_befF	; 0x40 | command
+	lcall	crc7_addbyte
 	PERFORM_SPI
 	movfw	spi_addr3	; high bits
+	lcall	crc7_addbyte
 	PERFORM_SPI
 	movfw	spi_addr2
+	lcall	crc7_addbyte
 	PERFORM_SPI
 	movfw	spi_addr1
+	lcall	crc7_addbyte
 	PERFORM_SPI
 	movfw	spi_addr0	; low bits
+	lcall	crc7_addbyte 	; returns the byte that was passed in
 	PERFORM_SPI
-	movfw	spi_befH	; CRC (even if CRCs are disabled; dummy value)
-	PERFORM_SPI
+	movlw	1
+	lcall	crc7_addbyte
+	lcall	crc7_finish
+	addlw	1
+
+	movwf	bl_arg		;save it
+	movlw	' '		;debug
+	lcall	putch_usart	;debug
+	movfw	spi_befF	;debug
+	lcall	putch_hex_usart	;debug
+	movfw	spi_addr3	;debug
+	lcall	putch_hex_usart	;debug
+	movfw	spi_addr2	;debug
+	lcall	putch_hex_usart	;debug
+	movfw	spi_addr1	;debug
+	lcall	putch_hex_usart	;debug
+	movfw	spi_addr0	;debug
+	lcall	putch_hex_usart	;debug
+	movfw	bl_arg		; [CRC]
+	lcall	putch_hex_usart	; debug
+	movlw	'='		;debug
+	lcall	putch_usart	;debug
+	movfw	bl_arg		;restore it
+
+	PERFORM_SPI	; send CRC
 
 receive_reply:	
 	movlw	0xFF		; R1 reply byte
@@ -50,13 +82,49 @@ receive_reply:
 	pagesel	receive_reply
 	btfsc	spi_cmd_tmp, 7	;can't use btfsc on the W reg :(
 	goto 	receive_reply	; retry, as long as the high bit is still set
-
+	
 	movfw	spi_cmd_tmp	; return the value last read
 	addlw	0x00		; make sure Z is set appropriately
 	return
 
+debug_spi_result:
+	movwf	bl_arg		;save it
+	fcall	putch_hex_usart	;display it
+	movfw	bl_arg		;restore it
+	return
+
+read_ocr:
+	movlw	4
+	movwf	spi_addr0
+read_ocr_loop:	
+	movlw	0xff
+	PERFORM_SPI
+	call	debug_spi_result
+	decfsz	spi_addr0, F
+	goto	read_ocr_loop
+	clrf	spi_addr0
+	return
+
+send_break:	
+	;; break between commands...
+	bsf	SD_CS
+	movlw	0xFF
+	PERFORM_SPI
+ 	bcf	SD_CS
+	return
+	
+;;; send the command given in W with a properly calculated checksum
+send_init_cmd:
+	movwf	spi_befF
+	fcall	spi_command 	; pulls its value from spi_befF
+	goto	debug_spi_result
+	
 ;;; initialize an MMC for use.
 mmc_init:
+	movlw	d'16'		; repeat CMD0 up to 16 times before giving up
+	movwf	mmc_init_timer2
+	
+repeat_cmd0:
 	;; send 80 pulses without CS asserted
  	bsf	SD_CS		; CS is active-low. Disable CS.
 	movlw	0x0B		; send an initial 10*8 = 80 clock pulses
@@ -67,75 +135,119 @@ send_another_pulse:
 	decfsz	temp_spi_2, F
 	goto	send_another_pulse
 	
+ 	bcf	SD_CS		; CS is active-low. Enable CS.
+	;; wait 16 clock cycles (or more)
 	movlw	0xff
 	movwf	mmc_init_timer	; loop counter.
- 	bcf	SD_CS		; CS is active-low. Enable CS.
-	;; wait 16 clock cycles
 	decfsz	mmc_init_timer, F
 	goto	$-1
 
-	;; send Command(0x40, 0, 0, 0x95) and expect to read a '1'.
-	movlw	CMD0		; "reset" - put into idle state
-	movwf	spi_befF
-	clrf	spi_addr3	; low bits
+	;; Time to actually send CMD0
+	clrf	spi_addr3
 	clrf	spi_addr2
 	clrf	spi_addr1
-	clrf	spi_addr0	; high bits
-	movlw	0x95
-	movwf	spi_befH	; 0x95 is the proper CRC for this packet (well, 0x94 crc | 0x01 stop bit)
-	fcall	spi_command
+	clrf	spi_addr0
+	movlw	CMD0		; send CMD0
+	call	send_init_cmd
+
 	xorlw	0x01		; expect reply 0x01 on success
-	skpz
+	skpnz
+	goto	continue_mmc_init
+	;; failed - retry and loop.
+	decfsz	mmc_init_timer2, F
+	goto	repeat_cmd0
 	goto	mmc_init_failed1
-	
+
+continue_mmc_init:
 	;; reset succeeded. Card is confirmed to be in idle mode.
+
+	movlw	0x01
+	movwf	spi_addr1
+	movlw	0xAA
+	movwf	spi_addr0
+	movlw	0x40 | 0x08 ; CMD8, SEND_OP_COND
+	call	send_init_cmd
+	xorlw	0x01
+	skpz
+	goto	failed_cmd8
+	
+	;; Didn't fail? Then it's Ver 2.00 or later card, either
+	;; standard capacity or high/extended capacity. Read OCR.
+	call	read_ocr
+
+	;; Determine if voltage range is acceptable, based on what was
+	;; in OCR. (We skip this step here, and assume it's okay.)
+
+	;; If we get here, we'll send ACMD41 with HCS=0 ("old" mode)
+	
+failed_cmd8:	
+	clrf	spi_addr1
+	clrf	spi_addr0
+
+	;; Send App CMD 41 (which means sending CMD55 CMD41) to set up SD card
 	
 	;; loop until we get init, or time out (mmc_init_timer)
 	clrf	mmc_init_timer
 	clrf	mmc_init_timer+1
 mmc_init_v2:
-	decfsz	mmc_init_timer, F
-	goto	mmc_init_v2_loop
-	decfsz	mmc_init_timer+1, F
-	goto	mmc_init_v2_loop
- 	goto	mmc_init_failed2	; loop expired.
-	
 mmc_init_v2_loop:
+	decfsz	mmc_init_timer, F
+	goto	_mivl1
+	decfsz	mmc_init_timer+1, F
+	goto	_mivl1
+ 	goto	mmc_init_failed2	; loop expired.
+_mivl1
+	clrf	spi_addr3
+	clrf	spi_addr2
+	clrf	spi_addr1
+	clrf	spi_addr0
 	movlw	CMD55
-	movwf	spi_befF
-	movlw	0xff
-	movwf	spi_befH
-	fcall	spi_command
+	call	send_init_cmd
+#if 0	
 	xorlw	0x01		; still idle? Should be.
 	skpz
 	goto	mmc_init_v2_loop ;retry.
-	
+#endif
+
 	;; followed by ACMD41
+	clrf	spi_addr3
+	clrf	spi_addr2
+	clrf	spi_addr1
+	clrf	spi_addr0
 	movlw	0x40 | 0x29	; ACMD41 (0x29)
-	movwf	spi_befF
-	fcall	spi_command
+	call	send_init_cmd
+
+	addlw	0
 	skpz			; idle?
-	goto	mmc_init_v2	; yes, idle (or error). Continue looping
+	goto	mmc_init_v2_loop ; yes, idle (or error). Continue looping
 
 	;; card has left idle state.
-
+#if 0
 	;; next: check the voltage for the card w/ CMD58
+	
 	movlw	CMD58
-	movwf	spi_befF
-	fcall	spi_command	; CMD58 is an R3 cmd. We need to read 4 extra bytes (since spi_command only handles R1 commands)
+	call	send_init_cmd
+	; CMD58 is an R3 cmd. We need to read 4 extra bytes (since spi_command only handles R1 commands)
+	call	debug_spi_result
 	movlw	0xff
 	PERFORM_SPI
+	call	debug_spi_result
 	movlw	0xff
 	PERFORM_SPI		; theoretically, reply should be MSK_OCR_33 (0xC0) which means it's a 3.3v card
+
 ;;;  	xorlw	0xc0
 ;;;  	skpz
 ;;;  	goto	mmc_init_failed	; wrong voltage card inserted! Uh-oh...
+	call	debug_spi_result
 	movlw	0xff
 	PERFORM_SPI
+	call	debug_spi_result
 	movlw	0xff
 	PERFORM_SPI
-	
+	call	debug_spi_result
+#endif	
 	;; next: set the blocksize to 512 bytes.
+	
  	movlw	CMD16
  	movwf	spi_befF
 	clrf	spi_addr0	; 512-byte blocks
@@ -145,6 +257,7 @@ mmc_init_v2_loop:
 	clrf	spi_addr3
  	fcall	spi_command
 	;; also not checking the return value here from CMD16
+	call	debug_spi_result ;debug
 
 	bsf	SD_INITIALIZED
 	bcf	SD_NEEDSFLUSH
@@ -185,9 +298,7 @@ mmc_start_read:
 
 	FINISH_READING_INLINE
 
-flush_not_reqd:	
- 	bcf	SD_CS		; CS is active-low. Enable CS. Leave it on.
-
+flush_not_reqd:
 	clrf	mmc_bytecount
 	clrf	mmc_bytecount_h
 	movlw	CMD18	; "read multiple blocks" command (CMD18)
@@ -227,14 +338,6 @@ continue_m:
 	retlw	0x00		; return success (note difference from maxi version of sd_spi.asm)
 	
 mmc_start_read_failed:
-	;; if you want to see the error on the serial port, then call this.
- 	movfw	spi_cmd_tmp
- 	lcall	putch_hex_usart
-	movlw	'!'
-	lcall	putch_usart
-	movlw	'!'
-	fcall	putch_usart
-	
 	movfw	spi_cmd_tmp
 	return			; return the failure code in W (guaranteed non-zero)
 	

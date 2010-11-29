@@ -130,6 +130,7 @@ done:
 ;;; which expect 1 byte replies.
 SPI_COMMAND_INLINE MACRO
 	LOCAL	rr
+        call    send_break
 	movfw	spi_befF	; 0x40 | command
 	PERFORM_SPI
 	movfw	spi_addr3	; high bits
