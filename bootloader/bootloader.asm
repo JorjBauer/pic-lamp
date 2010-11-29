@@ -1,10 +1,10 @@
-        include "../processor_def.inc"
+        include "../main/processor_def.inc"
 	include	"bl_memory.inc"
 	include	"min_serial.inc"
 	include	"min_sd_spi.inc"
 	include	"min_spi.inc"
-	include	"../constants.inc"
-	include	"../common.inc"
+	include	"../main/constants.inc"
+	include	"../main/common.inc"
 	include	"min_piceeprom.inc"
 	include "crc7.inc"
 	

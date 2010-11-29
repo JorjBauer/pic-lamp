@@ -1,6 +1,6 @@
 	include	"processor_def.inc"
 
-        include	"../common.inc"
+        include	"../main/common.inc"
 	include	"bl_memory.inc"
 	
 	GLOBAL	putch_usart

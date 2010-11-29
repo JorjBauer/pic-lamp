@@ -23,10 +23,10 @@ test.hex: testmain.o
 
 test: test.hex
 	picp $(SERIAL) 16f877a -ef
-	picp $(SERIAL) 16f877a -wc `./perl-flags-generator test.hex` -s -wp test.hex 
+	picp $(SERIAL) 16f877a -wc `../util/perl-flags-generator test.hex` -s -wp test.hex 
 
 memory.hint:
-	./build-hints.pl > memory.hint
+	../util/build-hints.pl > memory.hint
 
 disassemble: main.hex memory.hint
 	pic-disassemble -d -D 5 -a -s -I .string -S dummy:_\.org:check_start:check_end:^_ -i main.hex -m main.map -r memory.hint -g main.gif
@@ -35,13 +35,13 @@ disassemblebl: bootfile.hex memory.hint
 	pic-disassemble -d -D 8 -a -s -I .string -S dummy:_\.org:check_start:check_end:^_ -i bootfile.hex -m main.map:bootloader/bootloader.map -r memory.hint -g main.gif
 
 firmware.bin: bootfile.hex
-	./extract-firmware < bootfile.hex > firmware.bin
+	../util/extract-firmware < bootfile.hex > firmware.bin
 
 bootfile.hex: main.hex
-	cd bootloader && make clean && make && cd .. && ./create-bootfile
+	cd ../bootloader && make clean && make && cd ../main && ../util/create-bootfile
 
 install: main.hex bootfile.hex
-	picp $(SERIAL) 16f877a -ef && picp $(SERIAL) 16f877a -wc `./perl-flags-generator main.hex` -s -wp bootfile.hex 
+	picp $(SERIAL) 16f877a -ef && picp $(SERIAL) 16f877a -wc `../util/perl-flags-generator main.hex` -s -wp bootfile.hex 
 
 installmain: main.hex
-	picp $(SERIAL) 16f877a -ef && picp $(SERIAL) 16f877a -wc `./perl-flags-generator main.hex` -s -wp main.hex
+	picp $(SERIAL) 16f877a -ef && picp $(SERIAL) 16f877a -wc `../util/perl-flags-generator main.hex` -s -wp main.hex

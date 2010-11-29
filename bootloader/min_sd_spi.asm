@@ -1,7 +1,7 @@
 	include "processor_def.inc"
-	include "../constants.inc"
+	include "../main/constants.inc"
 	include "bl_memory.inc"
-	include "../common.inc"
+	include "../main/common.inc"
 	include "min_serial.inc"
 #define HAVE_MMC_EXTERNS
 	include	"min_sd_spi.inc"

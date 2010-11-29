@@ -1,6 +1,6 @@
-	include	"../processor_def.inc"
+	include	"../main/processor_def.inc"
 	include "bl_memory.inc"
-	include "../common.inc"
+	include "../main/common.inc"
 	
 	GLOBAL	crc7_init
 	GLOBAL	crc7_addbyte

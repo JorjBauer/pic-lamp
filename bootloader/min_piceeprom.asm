@@ -1,6 +1,6 @@
 	include	"processor_def.inc"
 	include	"bl_memory.inc"
-	include "../common.inc"
+	include "../main/common.inc"
 	include "min_serial.inc"
 	
 	GLOBAL	fpm_read
