@@ -16,8 +16,8 @@
  #define BUTTON_PORT	PORTA
 #define AUDIO_ENABLE	PORTB, 3
  #define SWITCH_PORT	PORTC
-#define ALARM_ENABLE	PORTC, 1
-#define OLD_ALARM_ENABLE	PORTC, 0
+#define SARAHS_ALARM_ENABLE	PORTC, 1
+#define ALARM_ENABLE	PORTC, 0
 #define SD_CS		PORTD, 2
 
 #define BLINK_LED1	GREEN_LED
@@ -39,6 +39,7 @@
 
 ;;; SD card command constants
 #define CMD0    (0x40 | 0)
+#define CMD1    (0x40 | 1)
 #define CMD16   (0x40 | 0x10)
 #define CMD17   (0x40 | 0x11)
 #define CMD18   (0x40 | 0x12)
