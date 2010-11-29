@@ -1,6 +1,6 @@
-all: card
+all: flash
 
-card: create-flash version
+flash: create-flash version
 	if [ ! -d "cache" ]; then mkdir cache; fi
 	(cd ../main && make firmware.bin)
 	./create-flash

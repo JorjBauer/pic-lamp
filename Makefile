@@ -1,4 +1,4 @@
-all:
+all:	flash
 
 main: 
 	cd main && make
@@ -19,8 +19,8 @@ disassemble:
 disassemblebl:
 	cd main && make disassemblebl
 
-card:
-	cd card-image-creator && make card
+flash:
+	cd card-image-creator && make flash
 
 install:
 	cd main && make install
