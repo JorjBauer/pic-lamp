@@ -453,7 +453,7 @@ int main(int argc, char *argv[])
 	memset(directory, 0, sizeof(directory));
 
 	firmware_version = system("./version.pl")>>8;
-	output_file = fopen("output2.img", "w");
+	output_file = fopen("flash.img", "w");
 	if (!output_file) {
 		fprintf(stderr, "Unable to open output image: %d", errno);
 		exit(-1);
