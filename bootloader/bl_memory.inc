@@ -46,6 +46,8 @@
 
 #define bl_tmp 0x48 ; used during errors
 
+#define bl_arg 0x49 ; used during sd initialization
+
 #define bl_byte1 0x70 ; used during 2-byte reads
 #define bl_byte2 0x71 ; used during 2-byte reads
 #define bl_sleep_ctr 0x72
