@@ -12,7 +12,11 @@ The bootloader resides at 0x1E04. The main program entry point is at
 the code (without significant reprogramming; see 'Flash updates').
 
 Memory from 0x1b00 through 0x1fff is reserved for the
-bootloader. Anything below that is fair game for the main program.
+bootloader. Anything below that is fair game for the main
+program. (And this is a prime target for refactoring; the bootloader
+could begin at 0x1b04 instead of 0x1e04, making its job a little
+simpler. But it grew this way, and I'm not moving it - so that it
+matches my one unit "in the field".)
 
 Bootloader
 
@@ -26,7 +30,7 @@ can be made and analyzed independently of the main app (cd bootloader
 Hybrid build
 
 The main program is built independently of the bootloader. 'make
-bootfile.hex' (or firmware.bin, or disassemblebl, or install) will
+firmware.bin' (as well as many other targets, such as 'install') will
 build a hybrid hex file that incorporates the main program as well as
 the bootloader.
 
