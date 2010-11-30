@@ -44,3 +44,6 @@ install: main.hex bootfile.hex
 
 installmain: main.hex
 	if [ -e "($SERIAL)" ]; then picp $(SERIAL) 16f877a -ef && picp $(SERIAL) 16f877a -wc `../util/perl-flags-generator main.hex` -s -wp main.hex ; else echo "Serial port not found" ; fi
+
+visual: main.hex
+	../util/visual-memory-map.pl < main.hex
