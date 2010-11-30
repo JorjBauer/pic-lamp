@@ -5,6 +5,8 @@
 
 int yearfuzz = 0; // used for debugging; added to all years (set to -2, e.g.)
 
+const char *event_file = "events.txt";
+
 typedef struct _event_entry {
   char *filename;
   int id;
@@ -14,23 +16,29 @@ typedef struct _event_entry {
   int year;
 } event_entry;
 
+typedef struct _media_entry {
+  char *filename;
+  int local_prefix;
+} media_entry;
+
 char *sox_cmd = "sox -v %.2f %s -r 10000 -c 1 -e unsigned-integer -b 16 -t raw %s 2>&1|grep clip >/dev/null";
 
 char *media_prefix = "media";
+char local_prefix[255] = "";
 char *cache_prefix = "cache";
 
-event_entry events[] = {
+event_entry events[500] = {
 			/* repeating events, like so:
 			 {"some-message.wav",
 			 0xID, 0x00, 
-			 <day>, <month>, 0xFF},
+			 <day>, <month>, 0xFF, 0},
 			 ... where 0xID is >= 0xA0 and < 0xF0
 			*/
 
 			/* one-time events, like so:
 			{"one-time-message.wav",
 			0x<ID>, 0x<BIT>,
-			<day>, <mon>, <year> },
+			<day>, <mon>, <year>, 0 },
 			... where 0xID >= 0x10 (and < max ram byte for PIC),
 			    and 0x<BIT> is a bit mask in that byte to refer to
 			    this specific event (0x01, 0x02, 0x04, 0x08.. 0x80)
@@ -38,10 +46,11 @@ event_entry events[] = {
 			*/
 
 
-			{ NULL, 0, 0, 0 }
+  { NULL, 0, 0, 0, 0 }
 };
+int num_events = 0;
 						
-char *alarm_song = "alarm.wav";
+media_entry alarm_song = {"alarm.wav", 0};
 float alarm_volume = 0.8;
 char *firmware_image = "../main/firmware.bin";
 unsigned char firmware_version;
@@ -49,86 +58,87 @@ unsigned char firmware_version;
 /* The basic media, all of which are included in the media/ directory, 
  * must match their corresponding  IDX_ numbers (in main/constants.inc).
  */
-char *media[] = { "0.wav", 
-		  "1.wav",
-		  "2.wav",
-		  "3.wav",
-		  "4.wav",
-		  "5.wav",
-		  "6.wav",
-		  "7.wav",
-		  "8.wav",
-		  "9.wav",
-		  "10.wav",
-		  "11.wav",
-		  "12.wav",
-		  "13.wav",
-		  "14.wav",
-		  "15.wav",
-		  "16.wav",
-		  "17.wav",
-		  "18.wav",
-		  "19.wav",
-		  "20.wav",
-		  "21.wav",
-		  "22.wav",
-		  "23.wav",
-		  "30.wav",
-		  "40.wav",
-		  "50.wav",
-		  "60.wav",
-		  "70.wav",
-		  "80.wav",
-		  "90.wav",
-		  "hundredhours.wav",
-		  "thetimeis.wav",
-		  "setalarmhour.wav",
-		  "setalarm.wav",
-		  "tensofminutes.wav",
-		  "onesofminutes.wav",
-		  "settimehour.wav",
-		  "settime.wav",
-		  "setmonth.wav",
-		  "setday.wav",
-		  "setdow.wav",
-		  "settensofyears.wav",
-		  "setonesofyears.wav",
-		  "timesetto.wav",
-		  "alarmsetto.wav",
-		  "january.wav",
-		  "february.wav",
-		  "march.wav",
-		  "april.wav",
-		  "may.wav",
-		  "june.wav",
-		  "july.wav",
-		  "august.wav",
-		  "september.wav",
-		  "october.wav",
-		  "november.wav",
-		  "december.wav",
-		  "sunday.wav",
-		  "monday.wav",
-		  "tuesday.wav",
-		  "wednesday.wav",
-		  "thursday.wav",
-		  "friday.wav",
-		  "saturday.wav",
-		  "alarmlight.wav",
-		  "alarmstartsearly.wav",
-		  "alarmstartsontime.wav",
-		  "andtodayis.wav",
-		  "blue.wav",
-		  "deadair.wav",
-		  "disabled.wav",
-		  "oclock.wav",
-		  "set.wav",
-		  "setyear.wav",
-		  "white.wav",
-		  /* Any media that is listed in the event list above must 
-		   * also be listed here */
-
-		  NULL };
+media_entry media[500] = { {"0.wav", 0},
+			   {"1.wav", 0},
+			   {"2.wav", 0},
+			   {"3.wav", 0},
+			   {"4.wav", 0},
+			   {"5.wav", 0},
+			   {"6.wav", 0},
+			   {"7.wav", 0},
+			   {"8.wav", 0},
+			   {"9.wav", 0},
+			   {"10.wav", 0},
+			   {"11.wav", 0},
+			   {"12.wav", 0},
+			   {"13.wav", 0},
+			   {"14.wav", 0},
+			   {"15.wav", 0},
+			   {"16.wav", 0},
+			   {"17.wav", 0},
+			   {"18.wav", 0},
+			   {"19.wav", 0},
+			   {"20.wav", 0},
+			   {"21.wav", 0},
+			   {"22.wav", 0},
+			   {"23.wav", 0},
+			   {"30.wav", 0},
+			   {"40.wav", 0},
+			   {"50.wav", 0},
+			   {"60.wav", 0},
+			   {"70.wav", 0},
+			   {"80.wav", 0},
+			   {"90.wav", 0},
+			   {"hundredhours.wav", 0},
+			   {"thetimeis.wav", 0},
+			   {"setalarmhour.wav", 0},
+			   {"setalarm.wav", 0},
+			   {"tensofminutes.wav", 0},
+			   {"onesofminutes.wav", 0},
+			   {"settimehour.wav", 0},
+			   {"settime.wav", 0},
+			   {"setmonth.wav", 0},
+			   {"setday.wav", 0},
+			   {"setdow.wav", 0},
+			   {"settensofyears.wav", 0},
+			   {"setonesofyears.wav", 0},
+			   {"timesetto.wav", 0},
+			   {"alarmsetto.wav", 0},
+			   {"january.wav", 0},
+			   {"february.wav", 0},
+			   {"march.wav", 0},
+			   {"april.wav", 0},
+			   {"may.wav", 0},
+			   {"june.wav", 0},
+			   {"july.wav", 0},
+			   {"august.wav", 0},
+			   {"september.wav", 0},
+			   {"october.wav", 0},
+			   {"november.wav", 0},
+			   {"december.wav", 0},
+			   {"sunday.wav", 0},
+			   {"monday.wav", 0},
+			   {"tuesday.wav", 0},
+			   {"wednesday.wav", 0},
+			   {"thursday.wav", 0},
+			   {"friday.wav", 0},
+			   {"saturday.wav", 0},
+			   {"alarmlight.wav", 0},
+			   {"alarmstartsearly.wav", 0},
+			   {"alarmstartsontime.wav", 0},
+			   {"andtodayis.wav", 0},
+			   {"blue.wav", 0},
+			   {"deadair.wav", 0},
+			   {"disabled.wav", 0},
+			   {"oclock.wav", 0},
+			   {"set.wav", 0},
+			   {"setyear.wav", 0},
+			   {"white.wav", 0},
+		     /* Any media that is listed in the event list above must 
+		      * also be listed here */
+		     
+			   {NULL, 0} };
+int num_media = 0;
 
 FILE *output_file;
 unsigned long directory_pos = 0;
@@ -137,10 +147,10 @@ unsigned char directory[100*512]; // 100 pages of directory/bootimg space (0-99)
 
 int media_id(const char *filename)
 {
-  char **p = media;
+  media_entry *p = media;
   int idx = 0;
-  while (*p) {
-    if (!strcmp(filename, *p))
+  while (p->filename) {
+    if (!strcmp(p->filename, filename))
       return idx;
     p++;
     idx++;
@@ -189,7 +199,7 @@ unsigned char to_bcd(unsigned char v)
 // processing of the media clip in order to make it playable; the PIC firmware will dump the 
 // raw bytes down the D/A channel, so we have to prepend command information to the bytes 
 // here.
-unsigned long add_clip(const char *path, float initial_volume)
+unsigned long add_clip(media_entry *m, float initial_volume)
 {
 	size_t s;
 	unsigned char buf[512];
@@ -200,9 +210,9 @@ unsigned long add_clip(const char *path, float initial_volume)
 	float volume = initial_volume;
 	if (volume == 0)
 	  volume = 5.0;
-	
-	sprintf(fullpath, "%s/%s", media_prefix, path);
-	sprintf(cachepath, "%s/%s", cache_prefix, path);
+
+	sprintf(fullpath, "%s/%s", m->local_prefix ? local_prefix : media_prefix, m->filename);
+	sprintf(cachepath, "%s/%s", cache_prefix, m->filename);
 
 	f = fopen(fullpath, "r");
 	if (!f) {
@@ -276,14 +286,14 @@ void construct_events()
 	// first event is the alarm. It's special.
 	directory_pos = 0; // start of block 0, which is where events live.
 
-	printf("Constructing alarm event from %s\n", alarm_song);
+	printf("Constructing alarm event from %s\n", alarm_song.filename);
 	// add the directory entry for the alarm
 	start_block = media_pos / 512;
 	directory[directory_pos++] = (start_block >> 24) & 0xFF;
 	directory[directory_pos++] = (start_block >> 16) & 0xFF;
 	directory[directory_pos++] = (start_block >>  8) & 0xFF;
 	directory[directory_pos++] = (start_block      ) & 0xFF;
-	s = add_clip(alarm_song, alarm_volume);
+	s = add_clip(&alarm_song, alarm_volume);
 	start_block = media_pos / 512;
 	directory[directory_pos++] = (start_block >> 24) & 0xFF;
 	directory[directory_pos++] = (start_block >> 16) & 0xFF;
@@ -354,7 +364,7 @@ void construct_events()
 
 void construct_media()
 {
-	char *p;
+        media_entry *p;
 	int idx = 0;
 	unsigned long s;
 	unsigned long start_block;
@@ -362,9 +372,9 @@ void construct_media()
 	// Page 3 of directory: media files for time setting.
 	directory_pos = 3*512;
 
-	p = media[idx++];
-	while (p) {
-	  printf("Processing media file %s\n", p);
+	p = &media[idx++];
+	while (p->filename) {
+	  printf("Processing media file %s\n", p->filename);
 		start_block = media_pos / 512;
 		directory[directory_pos++] = (start_block >> 24) & 0xFF;
 		directory[directory_pos++] = (start_block >> 16) & 0xFF;
@@ -378,7 +388,7 @@ void construct_media()
 		directory[directory_pos++] = (start_block >>  8) & 0xFF;
 		directory[directory_pos++] = (start_block      ) & 0xFF;
 	
-		p = media[idx++];
+		p = &media[idx++];
 	}
 
 	if (1) {
@@ -445,9 +455,83 @@ void write_directory()
 	fwrite(directory, sizeof(directory), 1, output_file);
 }
 
+void count_events()
+{
+  num_events = 0;
+  while (events[num_events].filename) {
+    num_events++;
+  }
+}
+
+void count_media()
+{
+  num_media = 0;
+  while (media[num_media].filename) {
+    num_media++;
+  }
+}
+
+// read list of events from event_file, adding them to media[] and events[]
+void read_events()
+{
+  FILE *f = fopen(event_file, "r");
+  if (!f)
+    return;
+
+  char line[255];
+  char *p;
+
+  char filename[255];
+  float volume;
+  int byte, bitmask, day, month, year;
+
+  while (p = fgets(line, sizeof(line), f)) {
+
+    if (sscanf(p, "prefix %s", filename) == 1) {
+      strcpy(local_prefix, filename);
+    } else if (sscanf(p, "alarm %s %f", filename, &volume) == 2) {
+      alarm_song.filename = malloc(strlen(filename)+1);
+      strcpy(alarm_song.filename, filename);
+      alarm_song.local_prefix = 1;
+      alarm_volume = volume;
+
+    } else if (sscanf(p, "%s %d %d %d %d %d\n", filename, &byte, &bitmask, &day, &month, &year) == 6) {
+      event_entry *e = &events[num_events];
+      e->filename = malloc(strlen(filename)+1);
+      strcpy(e->filename, filename);
+      e->id = byte;
+      e->bitpattern = bitmask;
+      e->day = day;
+      e->month = month;
+      e->year = year;
+      media[num_media].filename = e->filename;
+      media[num_media].local_prefix = 1;
+
+      e = &events[num_events+1];
+      memset(e, 0, sizeof(event_entry));
+
+      num_events++;
+      num_media++;
+      media[num_media].filename = NULL;
+    } else if (strncmp(p, "//", 2) == 0) {
+      // Ignore the comment...
+    } else {
+      fprintf(stderr, "ERROR: failed to parse line: '%s'\n", p);
+      exit(-11);
+    }
+  }
+
+  fclose(f);
+}
+
 int main(int argc, char *argv[])
 {
 	memset(directory, 0, sizeof(directory));
+
+	count_events();
+	count_media();
+
+	read_events();
 
 	firmware_version = system("./version.pl")>>8;
 	output_file = fopen("flash.img", "w");
