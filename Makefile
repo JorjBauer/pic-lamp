@@ -27,3 +27,6 @@ install:
 
 installmain:
 	cd main && make installmain
+
+visual:
+	cd main && make visual
